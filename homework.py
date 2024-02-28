@@ -16,7 +16,7 @@ PRACTICUM_TOKEN = os.getenv('YA_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TG_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('MY_ID')
 
-RETRY_PERIOD = 600
+RETRY_PERIOD = 5
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -28,7 +28,7 @@ HOMEWORK_VERDICTS = {
 }
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -81,7 +81,7 @@ def get_api_answer(timestamp):
         response = requests.get(
             ENDPOINT,
             headers=HEADERS,
-            params={'from_date': timestamp}
+            params={'from_date': 17770000}
         )
         if response.status_code != HTTPStatus.OK:
             logging.error(f'Эднпоинт {ENDPOINT} недоступен.'
@@ -103,6 +103,7 @@ def check_response(response):
     if not isinstance(response, dict):
         raise TypeError('Ответ получен в некорректном формате')
     elif 'homeworks' not in response:
+        logging.error('Отсутствует ключ homeworks в ответе от API')
         raise Exception('Отсутствует ключ homeworks в ответе')
     elif not isinstance(response['homeworks'], list):
         raise TypeError('Ответ получен в некорректном формате')
@@ -113,6 +114,7 @@ def check_response(response):
 def parse_status(homework):
     """Функция извлекает из информации о домашней работе статус этой работы."""
     if 'homework_name' not in homework:
+        logging.error('Отсутствует ключ homework_name в ответе от API')
         raise KeyError("Отсутствует ключ 'homework_name' в ответе")
     elif homework['status'] in HOMEWORK_VERDICTS:
         homework_name = homework['homework_name']

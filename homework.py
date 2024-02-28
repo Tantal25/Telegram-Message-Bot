@@ -16,7 +16,7 @@ PRACTICUM_TOKEN = os.getenv('YA_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TG_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('MY_ID')
 
-RETRY_PERIOD = 5
+RETRY_PERIOD = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -81,7 +81,7 @@ def get_api_answer(timestamp):
         response = requests.get(
             ENDPOINT,
             headers=HEADERS,
-            params={'from_date': 17770000}
+            params={'from_date': timestamp}
         )
         if response.status_code != HTTPStatus.OK:
             logging.error(f'Эднпоинт {ENDPOINT} недоступен.'

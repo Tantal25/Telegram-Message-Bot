@@ -122,9 +122,10 @@ def parse_status(homework):
         return (f'Изменился статус проверки работы "{homework_name}".'
                 f'{HOMEWORK_VERDICTS[verdict]}')
     else:
-        raise exceptions.ParseError('Ошибка парсинга.Получен неккоретный'
-                                    'статус домашней работы:'
-                                    f' {homework['status']}')
+        raise exceptions.ParseError(
+            'Ошибка парсинга. Получен неккоректный'
+            f'статус домашней работы: {homework['status']}'
+        )
 
 
 def main():

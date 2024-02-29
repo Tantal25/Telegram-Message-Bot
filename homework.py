@@ -36,10 +36,7 @@ def check_tokens():
     и выводит в лог какая конкретно отсутствует.
     """
     tokens = ('PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID')
-    final_token_list = []
-    for token in tokens:
-        if not globals()[token]:
-            final_token_list.append(token)
+    final_token_list = [token for token in tokens if not globals()[token]]
     if final_token_list:
         logging.critical(
             "Отсутствует обязательная переменная окружения:"
@@ -67,15 +64,18 @@ def get_api_answer(timestamp):
     Возвращает ответ приведенный к типам данных Python.
     """
     try:
-        logging.debug(f'Совершается запрос на адрес {ENDPOINT} с параметрами:'
-                      f'OAuth: PRACTICUM_TOKEN и временной меткой {timestamp}')
         response = requests.get(
             ENDPOINT,
             headers=HEADERS,
             params={'from_date': timestamp}
         )
     except requests.RequestException:
-        raise ConnectionError
+        raise ConnectionError(f'Запрос на адрес {ENDPOINT} с параметрами:'
+                              'OAuth: PRACTICUM_TOKEN '
+                              f'и временной меткой {timestamp} не удался')
+    else:
+        logging.debug(f'Совершается запрос на адрес {ENDPOINT} с параметрами:'
+                      f'OAuth: PRACTICUM_TOKEN и временной меткой {timestamp}')
     if response.status_code != HTTPStatus.OK:
         raise exceptions.EndpointError(
             f'Возникла ошибка при обращении к эндпоинту : {ENDPOINT}.'
@@ -102,7 +102,8 @@ def check_response(response):
         raise KeyError("Отсутствует ключ 'current_date' в ответе")
     elif not isinstance(response['homeworks'], list):
         raise TypeError(
-            f'Ответ получен в некорректном формате {type(response)}'
+            'Ответ получен в некорректном формате'
+            f"{type(response['homeworks'])}"
         )
     logging.debug('Успешно завершена проверка ответа сервера')
     return response['homeworks']
@@ -115,17 +116,16 @@ def parse_status(homework):
         raise KeyError("Отсутствует ключ 'homework_name' в ответе")
     elif 'status' not in homework:
         raise KeyError("Отсутствует ключ 'status' в ответе")
-    elif homework['status'] in HOMEWORK_VERDICTS:
-        homework_name = homework['homework_name']
-        verdict = homework['status']
-        logging.debug('Успешно завершена проверка статуса домашней работы')
-        return (f'Изменился статус проверки работы "{homework_name}".'
-                f'{HOMEWORK_VERDICTS[verdict]}')
-    else:
+    elif homework['status'] not in HOMEWORK_VERDICTS:
         raise exceptions.ParseError(
             'Ошибка парсинга. Получен неккоректный'
             f"статус домашней работы: {homework['status']}"
         )
+    homework_name = homework['homework_name']
+    verdict = homework['status']
+    logging.debug('Успешно завершена проверка статуса домашней работы')
+    return (f'Изменился статус проверки работы "{homework_name}".'
+            f'{HOMEWORK_VERDICTS[verdict]}')
 
 
 def main():
@@ -139,7 +139,7 @@ def main():
         try:
             response = get_api_answer(timestamp)
             homework = check_response(response)
-            if not len(homework):
+            if not homework:
                 logging.debug('Отсутствует новый статус домашней работы')
             else:
                 message = parse_status(homework[0])
@@ -147,15 +147,11 @@ def main():
                 last_message = message
             timestamp = int(time.time())
         except Exception as error:
-            logging.error(
-                f'Во время выполнения программы получена ошибка: {error}',
-                exc_info=True)
             message = f'Сбой в работе программы: {error}'
+            logging.error(message, exc_info=True)
             if last_message != message:
                 send_message(bot, message)
-            else:
-                pass
-            last_message = message
+                last_message = message
         finally:
             time.sleep(RETRY_PERIOD)
 

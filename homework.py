@@ -124,7 +124,7 @@ def parse_status(homework):
     else:
         raise exceptions.ParseError(
             'Ошибка парсинга. Получен неккоректный'
-            f'статус домашней работы: {homework['status']}'
+            f"статус домашней работы: {homework['status']}"
         )
 
 
